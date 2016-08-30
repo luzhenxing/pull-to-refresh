@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="initial-scale=1, maximum-scale=1">
+<title>上拉刷新</title>
+
+<style>
+    * { padding: 0; margin: 0; }
+    html, body {
+        width: 100%;
+        height: 100%;
+    }
+    body {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 0;
+        left: 0;
+        overflow: hidden;
+        background: #eee;
+    }
+    .content {
+    }
+    .card {
+        border: 1px solid #c0c0c0;
+        height: 300px;
+        margin: 10px;
+        background: #FFF;
+    }
+    .pull-to-refresh-content {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 100%;
+        overflow: auto;
+    }
+    .pull-to-refresh-layer {
+        margin-top: -44px;
+        height: 44px;
+        text-align: center;
+    }
+    .pull-to-refresh-layer .preloader {
+        display: none;
+        height: 100%;
+        background: url('http://static.qyer.com/models/basic/images/loading-32.gif') no-repeat center center;
+        background-size: 16px 16px;
+    }
+    .pull-to-refresh-content.pull-to-loading .pull-to-refresh-layer {
+        margin-top: 0;
+    }
+    .pull-to-refresh-content.pull-to-loading .preloader {
+        display: block;
+    }
+    .pull-to-refresh-content.pull-to-loading .pull-to-refresh-arrow {
+        display: none;
+    }
+    .pull-to-refresh-arrow {
+        height: 100%;
+        line-height: 44px;
+    }
+    .pull-to-refresh-arrow span.icon-arrow {
+        display: inline-block;
+        transition: all .2s ease-in-out;
+    }
+    .pull-to-refresh-arrow.up span.icon-arrow {
+        transform: rotate(180deg);
+    }
+    .pull-to-refresh-container {
+        position: relative;
+        z-index: 10;
+        transition: all .2s ease-in-out;
+    }
+    .pullto {
+        transition: none;
+    }
+</style>
+</head>
+<body>
+    <div class="content">
+        <div class="pull-to-refresh-content">
+            <div class="pull-to-refresh-container">
+                <div class="card"></div>
+                <div class="card"></div>
+                <div class="card"></div>
+                <div class="card"></div>
+                <div class="card"></div>
+                <div class="card"></div>
+            </div>
+            <div class="pull-to-refresh-layer">
+                <div class="preloader"></div>
+                <div class="pull-to-refresh-arrow">上拉刷新 <span class="icon-arrow">👇</span></div>
+            </div>
+        </div>
+    </div>
+<script>
+function pullToRefresh() {
+    var content = document.querySelector('.pull-to-refresh-content'),
+        container = document.querySelector('.pull-to-refresh-container'),
+        loadLayer = document.querySelector('.pull-to-refresh-layer'),
+        arrow = document.querySelector('.pull-to-refresh-arrow'),
+        isPullToMax = true,
+        pullToHeight = 44,
+        pullToMax = pullToHeight * 1.2,
+        touchClientY = 0;
+
+    var init = function() {
+        bindEvent();
+    },
+    pullDown = function(e) {
+        if (content.scrollTop + content.clientHeight >= container.offsetHeight) {
+            addClass(container, 'pullto');
+            touchClientY = /touch/.test(e.type) ? e.touches[0].clientY : e.clientY;
+
+            container.addEventListener('mousemove', mousemove, false);
+            container.addEventListener('touchmove', mousemove, false);
+        }
+    },
+    pullUp = function(e) {
+        if (hasClass(arrow, 'up') && ! hasClass(content, 'pull-to-loading')) {
+            pullTo();
+        }
+        removeClass(container, 'pullto');
+        container.style.transform = `translate(0,0)`;
+        container.removeEventListener('mousemove', mousemove);
+        container.removeEventListener('touchmove', mousemove);
+    },
+    mousemove = function (e) {
+        var num = (/touch/.test(e.type) ? e.touches[0].clientY : e.clientY) - touchClientY;
+        if (num > 0) return false;
+        if (isPullToMax &&  Math.abs(num) >= pullToMax) {
+            num = -pullToMax;
+        }
+        e.preventDefault();
+        if (Math.abs(num) >= pullToHeight) {
+            addClass(arrow, 'up');
+        } else {
+            removeClass(arrow, 'up');
+        }
+        container.style.transform = `translate(0,${num}px)`;
+    },
+    addClass = function(obj, className) {
+        if (! hasClass(obj, className)) {
+            obj.className += ' ' + className;
+        }
+    },
+    removeClass = function(obj, className) {
+        var regClass = new RegExp('\\s?' + className);
+        obj.className = obj.className.replace(regClass, '');
+    },
+    hasClass = function(obj, className) {
+        return obj.className.indexOf(className) > -1;
+    },
+    pullTo = function() {
+        removeClass(arrow, 'up');
+        addClass(content, 'pull-to-loading');
+        content.scrollTop = content.scrollHeight;
+        loading();
+    },
+    loading = function() {
+        setTimeout(function() {
+            appendDom();
+            removeClass(content, 'pull-to-loading');
+        }, 2000);
+    },
+    appendDom = function() {
+        var card = document.createElement('div');
+        card.className = 'card';
+        container.appendChild(card);
+    },
+    bindEvent = function() {
+        container.addEventListener('mousedown', pullDown, false);
+        container.addEventListener('touchstart', pullDown, false);
+        container.addEventListener('mouseup', pullUp, false);
+        container.addEventListener('touchend', pullUp, false);
+    };
+
+    init();
+
+    // return {
+    //     init: init
+    // }
+}
+document.addEventListener('DOMContentLoaded', () => {
+    pullToRefresh();
+});
+</script>
+</body>
+</html>
